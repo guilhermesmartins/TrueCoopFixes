@@ -1,3 +1,5 @@
+> **True Co-op Fixes** - a modified version of [New Vegas Co-op](https://github.com/Zyrcxies/NewVegasCoop) by Zyrcxies, not the official mod. See [FORK.md](FORK.md) for what changed. Same license ([LICENSE](LICENSE)).
+
 # New Vegas Co-op
 
 A co-op multiplayer mod for Fallout: New Vegas (Steam) for a host and 2-4 friends doing a playthrough together.
