@@ -1036,10 +1036,57 @@ namespace game
         return action == HighProcess::kAnimAction_Reload;
     }
 
+    namespace
+    {
+        // FNV-Coop private fix (2026-11-17): Remove() used to Disable + MarkForDelete in the same frame. A joiner
+        // crashed (EXCEPTION_ACCESS_VIOLATION at FalloutNV.exe 0x5B1BB6) while the scene graph still updated the
+        // skeleton of a copy of the host's NPC that had just been removed that way. Now: Disable at once (the game
+        // takes the 3D away safely), MarkForDelete only once the 3D is gone and a few seconds have passed.
+        struct PendingRemoval
+        {
+            uint32_t id;
+            uint32_t since;
+        };
+        std::vector<PendingRemoval> g_pendingRemovals;
+        constexpr uint32_t kRemoveAfterMs = 3000;
+        constexpr uint32_t kRemoveAtMostMs = 30000;
+    }
+
     void Remove(TESObjectREFR* ref)
     {
-        if (g_compiled && ref)
-            g_scripts->CallFunctionAlt(g_remove, ref, 0);
+        if (!g_compiled || !ref)
+            return;
+        if (g_disable)
+            g_scripts->CallFunctionAlt(g_disable, ref, 0);
+        for (const PendingRemoval& p : g_pendingRemovals)
+            if (p.id == ref->refID)
+                return;
+        g_pendingRemovals.push_back({ref->refID, 0});
+    }
+
+    void FlushRemovals(uint32_t now)
+    {
+        if (!g_compiled)
+            return;
+        for (auto it = g_pendingRemovals.begin(); it != g_pendingRemovals.end();)
+        {
+            if (!it->since)
+                it->since = now ? now : 1;
+            TESObjectREFR* ref = LookupRef(it->id);
+            if (!ref)
+            {
+                it = g_pendingRemovals.erase(it);
+                continue;
+            }
+            uint32_t age = now - it->since;
+            if (age >= kRemoveAfterMs && (!Is3DLoaded(ref) || age >= kRemoveAtMostMs))
+            {
+                g_scripts->CallFunctionAlt(g_remove, ref, 0);
+                it = g_pendingRemovals.erase(it);
+            }
+            else
+                ++it;
+        }
     }
 
     namespace

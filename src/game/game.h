@@ -136,6 +136,8 @@ namespace game
     void PlayAttack(TESObjectREFR* ref, const std::vector<uint32_t>& worn, uint8_t shots);
     void ReleaseThrow(TESObjectREFR* ref, const std::vector<uint32_t>& worn);
     void Remove(TESObjectREFR* ref);
+    // Deferred MarkForDelete of refs Remove() disabled (FNV-Coop private fix 2026-11-17); call once a frame.
+    void FlushRemovals(uint32_t now);
     void Notify(const char* text);
     bool AskYesNo(const std::string& text, int id);
     void ShowMessage(const std::string& text);

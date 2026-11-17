@@ -917,7 +917,7 @@ namespace
             if (config.ipHosting && g_coop.GetRole() == coop::Role::Host)
             {
                 LOG_INFO("Joining by IP is on: port %u (UDP)", config.port);
-                game::Notify("Co-op: friends can join by IP (your address: MCM > New Vegas Co-op > Show My Address)", 8);
+                game::Notify("Co-op: friends can join by IP (your address: MCM > co-op page > Show My Address)", 8);
             }
             break;
         }
@@ -1419,7 +1419,7 @@ namespace
         game::AskChoice("A new game: turn on any co-op settings?\n\nCo-op balanced: harder and made for a group "
             "(smarter enemies, scarcer supplies, slower leveling). Leave it off if you use mods that change the game's "
             "balance.\nFriendly fire: players can hurt each other.\n\nThe host's settings count for everyone. Change "
-            "them any time in the Mod Configuration Menu (New Vegas Co-op).", coop::SaveModeButtons(), kModeQuestion);
+            "them any time in the Mod Configuration Menu (co-op page).", coop::SaveModeButtons(), kModeQuestion);
         g_modeAsked = true;
         LOG_INFO("Mode: asked (a new game; now %s)", coop::Describe(g_ourMode).c_str());
     }
@@ -2292,6 +2292,7 @@ namespace
         }
         else
             g_npcs.ReleaseAll();
+        game::FlushRemovals(now);
         g_partClock.Done(kPartNpcs);
         static uint32_t s_nextDesyncNotice = 0;
         for (const std::string& text : g_coop.TakeDesyncNotices())

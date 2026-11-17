@@ -298,7 +298,7 @@ namespace coop
         FILE* f = nullptr;
         if (fopen_s(&f, folders.pluginsTxt.c_str(), "w") != 0 || !f)
             return error = "couldn't write " + folders.pluginsTxt, false;
-        std::fprintf(f, "# Set by New Vegas Co-op to match the host's mods (the old list is in %s)\n", backup.c_str());
+        std::fprintf(f, "# Set by True Co-op Fixes to match the host's mods (the old list is in %s)\n", backup.c_str());
         for (const ModFile& m : host)
             if (m.kind == net::ModKind::Plugin)
                 std::fprintf(f, "%s\n", m.name.c_str());

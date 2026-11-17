@@ -364,7 +364,7 @@ namespace game
             Slot<bool(__thiscall*)(void*, const char*, const char*)>(g_friends, slot::kSetPresence)(g_friends,
                 "nvcoop", value.c_str());
             Slot<bool(__thiscall*)(void*, const char*, const char*)>(g_friends, slot::kSetPresence)(g_friends,
-                "status", "Hosting New Vegas Co-op");
+                "status", "Hosting True Co-op Fixes");
             Slot<bool(__thiscall*)(void*, const char*, const char*)>(g_friends, slot::kSetPresence)(g_friends,
                 "nvcoopmode", mode.c_str());
         }
