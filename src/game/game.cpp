@@ -265,15 +265,52 @@ namespace game
             g_scripts->CallFunctionAlt(g_bringToPlayer, ref, 1, to);
     }
 
+    namespace
+    {
+        // True Co-op Fixes (2026-11-19): a physics world with NaN / ~1e19 coordinates froze both games in combat
+        // (endless Havok broadphase loop at FalloutNV.exe 0xD16AEB under the next raycast). Moves from co-op now
+        // refuse positions that are not finite or lie far outside any world, and never SetPos a dead or knocked-out
+        // actor (its ragdoll owns the body). Each refusal is logged so the cause shows up in NVCoop.log.
+        constexpr float kWorldLimit = 1.0e6f, kHeightLimit = 2.0e5f;
+        uint32_t g_refusedMoves = 0;
+
+        bool SanePosition(float x, float y, float z)
+        {
+            return std::isfinite(x) && std::isfinite(y) && std::isfinite(z) && std::fabs(x) < kWorldLimit &&
+                std::fabs(y) < kWorldLimit && std::fabs(z) < kHeightLimit;
+        }
+
+        bool RefuseMove(TESObjectREFR* ref, float x, float y, float z, const char* what)
+        {
+            const char* why = nullptr;
+            if (!SanePosition(x, y, z))
+                why = "a bad position";
+            else if (IsActor(ref) && ref != Player() && (IsDead(ref) || IsKnockedOut(ref)))
+                why = IsDead(ref) ? "dead (ragdoll)" : "knocked out (ragdoll)";
+            if (!why)
+                return false;
+            if (++g_refusedMoves <= 50 || g_refusedMoves % 100 == 0)
+                LOG_WARN("Moves: refused %s of %08X to (%g, %g, %g): %s (%u refused so far)", what, ref->refID, x, y,
+                    z, why, g_refusedMoves);
+            return true;
+        }
+    }
+
     void Move(TESObjectREFR* ref, const coop::Pose& pose)
     {
-        if (g_compiled && ref)
-            g_scripts->CallFunctionAlt(g_move, ref, 4, FloatArg(pose.x), FloatArg(pose.y), FloatArg(pose.z),
-                FloatArg(pose.heading * kRadToDeg));
+        if (!g_compiled || !ref || RefuseMove(ref, pose.x, pose.y, pose.z, "a move"))
+            return;
+        g_scripts->CallFunctionAlt(g_move, ref, 4, FloatArg(pose.x), FloatArg(pose.y), FloatArg(pose.z),
+            FloatArg(pose.heading * kRadToDeg));
     }
 
     bool TravelTo(const coop::Pose& pose)
     {
+        if (!SanePosition(pose.x, pose.y, pose.z))
+        {
+            LOG_WARN("Moves: refused to take our player to a bad position (%g, %g, %g)", pose.x, pose.y, pose.z);
+            return false;
+        }
         TESForm* place = LookupForm(pose.space);
         if (!g_compiled || !Player() || !place ||
             (place->typeID != kFormType_TESObjectCELL && place->typeID != kFormType_TESWorldSpace))
@@ -2232,6 +2269,8 @@ namespace game
     void MoveItem(TESObjectREFR* ref, float x, float y, float z, float rx, float ry, float rz)
     {
         constexpr float kDegrees = 57.2957795f;
+        if (ref && (!std::isfinite(rx) || !std::isfinite(ry) || !std::isfinite(rz) || RefuseMove(ref, x, y, z, "an item move")))
+            return;
         if (g_moveItem && ref)
             g_scripts->CallFunctionAlt(g_moveItem, ref, 6, FloatArg(x), FloatArg(y), FloatArg(z), FloatArg(rx * kDegrees),
                 FloatArg(ry * kDegrees), FloatArg(rz * kDegrees));

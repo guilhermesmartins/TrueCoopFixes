@@ -12,3 +12,9 @@ Built on 0.1.11; it plays with the official 0.1.11 (same protocol). Changes:
   NiRefObject still queued for drawing) while friends' item pickups were applied. Now `Remove()` disables at once and
   `game::FlushRemovals()` (called every frame) marks the reference for deletion only once its 3D is gone and at least
   3 s have passed (30 s at most). This covers NPC copies, stand-ins, world items and mines.
+
+- **0.1.11-fixes.2: no unsafe teleports (physics freeze).** Both games froze in combat with the physics world
+  holding NaN / ~1e19 coordinates (an endless Havok broadphase loop at FalloutNV.exe 0xD16AEB the next time anything
+  cast a ray). `Move()`, `MoveItem()` and `TravelTo()` now refuse positions that are not finite or lie far outside any
+  world, and never SetPos a dead or knocked-out actor (the ragdoll owns its body then). Every refusal is logged
+  ("Moves: refused ...") so the cause can be confirmed from NVCoop.log.
